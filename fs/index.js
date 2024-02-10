@@ -1,2 +1,2 @@
-export { readDB } from "./readDb.js";
-export { writeDB } from "./writeDb.js";
+export { readFromDB } from "./readFromDB.js";
+export { insertToDB } from "./insertToDB.js";

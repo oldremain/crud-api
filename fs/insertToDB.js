@@ -1,16 +1,16 @@
 import fs from "node:fs";
 import { v4 as generateUuid } from "uuid";
-import { readDB } from "./readDb.js";
+import { readFromDB } from "./readFromDB.js";
 import { getAbsolutePath } from "../lib/index.js";
 import { stringifyJson } from "../lib/index.js";
 
-export const writeDB = async (user) => {
+export const insertToDB = async (user) => {
   const newUser = {
     id: generateUuid(),
     ...user,
   };
   const filePath = getAbsolutePath(process.env.USER_DB);
-  const data = await readDB(filePath);
+  const data = await readFromDB(filePath);
   if (data.users) data.users?.push(newUser);
 
   const writeStream = fs.createWriteStream(filePath);
