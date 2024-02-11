@@ -1,40 +1,31 @@
 import "dotenv/config";
 import http from "node:http";
 import { validate as validateUuid } from "uuid";
-import { readFromDB, insertToDB } from "./fs/index.js";
+import { readFromDB, insertToDB, deleteFromDB } from "./fs/index";
 import {
   HTTP_METHODS,
   stringifyJson,
   parseJson,
   validateUser,
-} from "./lib/index.js";
-import { deleteFromDB } from "./fs/deleteFromDb.js";
+  sendInvalidUserIdError,
+} from "./lib/index";
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT;
 
 const server = http.createServer();
 
 server.on("request", async (req, res) => {
-  const METHOD = req.method;
-  const URL = req.url;
-  let userId;
-  let isValidUserId;
+  const METHOD = req.method as keyof typeof HTTP_METHODS;
+  const URL = req.url as string;
+
+  let userId: string | undefined;
+  let isValidUserId: boolean | undefined;
   if (URL.startsWith("/api/users")) {
     userId = URL.split("/")[3];
     if (userId) {
       isValidUserId = validateUuid(userId);
     }
   }
-  //TODO check if it needed handle parsing user id before handle routing to avoid repet code
-  /* Validate user id */
-  // if (userId) {
-  //   const isValidId = validateUuid(userId);
-  //   if (!isValidId) {
-  //     res.statusCode = 400;
-  //     res.end(stringifyJson({ message: "Invalid user id" }));
-  //     return;
-  //   }
-  // }
 
   try {
     if (URL.startsWith("/api/users")) {
@@ -49,8 +40,7 @@ server.on("request", async (req, res) => {
       /* Get user by ID */
       if (METHOD === HTTP_METHODS.GET && userId) {
         if (!isValidUserId) {
-          res.statusCode = 400;
-          res.end(stringifyJson({ message: "Invalid user id" }));
+          sendInvalidUserIdError(res);
           return;
         }
         const data = await readFromDB();
@@ -82,7 +72,7 @@ server.on("request", async (req, res) => {
               res.writeHead(201, { "Content-Type": "application/json" });
               res.end(stringifyJson(newUser));
             }
-          } catch (e) {
+          } catch (e: any) {
             /* Error parsing user json obj */
             res.statusCode = 500;
             res.end(stringifyJson({ message: e.message }));
@@ -94,8 +84,7 @@ server.on("request", async (req, res) => {
       /* Change user */
       if (METHOD === HTTP_METHODS.PUT && userId) {
         if (!isValidUserId) {
-          res.statusCode = 400;
-          res.end(stringifyJson({ message: "Invalid user id" }));
+          sendInvalidUserIdError(res);
           return;
         }
         let data = "";
@@ -105,6 +94,7 @@ server.on("request", async (req, res) => {
         req.on("end", async () => {
           try {
             const updatedUser = parseJson(data);
+            /* So all fields are required we should validate user fields */
             if (!validateUser(updatedUser)) {
               res.statusCode = 400;
               res.end(stringifyJson({ message: "Invalid user data" }));
@@ -117,15 +107,15 @@ server.on("request", async (req, res) => {
                   ...deletedUser,
                   ...updatedUser,
                 };
-                const newUser = await insertToDB(updatedData);
+                const newUserData = await insertToDB(updatedData);
                 res.writeHead(200, { "Content-Type": "application/json" });
-                res.end(stringifyJson(newUser));
+                res.end(stringifyJson(newUserData));
               } else {
                 res.statusCode = 404;
                 res.end(stringifyJson({ message: "User not found" }));
               }
             }
-          } catch (e) {
+          } catch (e: any) {
             /* Error parsing user json obj */
             res.statusCode = 500;
             res.end(stringifyJson({ message: e.message }));
@@ -135,10 +125,29 @@ server.on("request", async (req, res) => {
       }
     }
 
+    /* Delete user */
+    if (METHOD === HTTP_METHODS.DELETE && userId) {
+      if (!isValidUserId) {
+        sendInvalidUserIdError(res);
+        return;
+      }
+      const data = await readFromDB();
+      const user = data.users.find((it) => it.id === userId);
+      if (user) {
+        await deleteFromDB(user.id);
+        res.statusCode = 204;
+        res.end();
+      } else {
+        res.statusCode = 404;
+        res.end(stringifyJson({ message: "User not found" }));
+      }
+      return;
+    }
+
     /* Resource not found */
     res.statusCode = 404;
     res.end(stringifyJson({ message: "Resource not found" }));
-  } catch (e) {
+  } catch (e: any) {
     /* Request processing error */
     res.statusCode = 500;
     res.end(stringifyJson({ message: e.message }));
@@ -146,5 +155,5 @@ server.on("request", async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Starting app on port - ${PORT}`);
+  console.log(`Server is running on port - ${PORT}`);
 });

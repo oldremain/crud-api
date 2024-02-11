@@ -5,10 +5,8 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "type": "module",
-  "main": "index.js",
   "scripts": {
-    "dev": "nodemon server.js"
+    "start:dev": "nodemon"
   },
   "repository": {
     "type": "git",
@@ -21,7 +19,12 @@
   },
   "homepage": "https://github.com/oldremain/crud-api#readme",
   "devDependencies": {
-    "nodemon": "^3.0.3"
+    "@types/node": "^20.11.17",
+    "@types/uuid": "^9.0.8",
+    "nodemon": "^3.0.3",
+    "ts-node": "^10.9.2",
+    "tslib": "^2.6.2",
+    "typescript": "^5.3.3"
   },
   "dependencies": {
     "dotenv": "^16.4.2",

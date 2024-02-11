@@ -1,9 +1,9 @@
 import fs from "node:fs";
-import { getAbsolutePath } from "../lib/index.js";
-import { parseJson, stringifyJson } from "../lib/index.js";
+import { Users, getAbsolutePath, parseJson, stringifyJson } from "../lib/index";
 
 export const readFromDB = async () => {
-  const dbTable = getAbsolutePath(process.env.USER_DB);
+  const dbTable = getAbsolutePath(process.env.USERS_DB);
+  console.log(dbTable);
   const readStream = fs.createReadStream(dbTable, "utf-8");
 
   let data = "";
@@ -11,15 +11,15 @@ export const readFromDB = async () => {
     data += chunk;
   });
 
-  return new Promise((res, rej) => {
+  return new Promise<Users>((res, rej) => {
     readStream.on("end", () => {
       try {
         res(parseJson(data));
-      } catch (e) {
+      } catch (e: any) {
         rej(e.message);
       }
     });
-    readStream.on("error", (e) => {
+    readStream.on("error", (e: any) => {
       if (e.code === "ENOENT") {
         const writeStream = fs.createWriteStream(dbTable);
         const newTable = { users: [] };

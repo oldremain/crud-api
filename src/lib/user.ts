@@ -1,17 +1,6 @@
-/* UserType = {
-  id: string,
-  username: string,
-  age: number,
-  hobbies: string[] | []
-} */
+import { type User, USER_PROP } from "./types";
 
-const USER_PROP = {
-  username: "username",
-  age: "age",
-  hobbies: "hobbies",
-};
-
-export const validateUser = (user) => {
+export const validateUser = (user: User) => {
   /* Check required prop */
   const hasRequiredProps =
     Object.keys(USER_PROP).length === Object.keys(user).length;
